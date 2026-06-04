@@ -196,10 +196,22 @@
 
   /* ── Secondary: shimmer over the VND value every ~9s ── */
   .exchange-rate-link {
-    font-size: 14px; font-weight: 590; color: var(--text-benefit);
-    text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
-    position: relative; display: inline-block; overflow: hidden;
+    /* narwhal Link — benefit colour, semibold, underlined */
+    font-size: 14px;
+    font-weight: 590;
+    color: var(--text-benefit);
     line-height: 1;
+    text-decoration: underline;
+    text-decoration-color: var(--text-benefit);
+    text-decoration-thickness: 1px;   /* narwhal borderWidthDefault */
+    text-underline-offset: 3px;
+    cursor: pointer;
+    /* shimmer containment — padding-bottom gives underline room */
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    padding-bottom: 2px;
+    margin-bottom: -2px; /* cancel layout shift from padding */
   }
   .exchange-rate-link::after {
     content: '';
