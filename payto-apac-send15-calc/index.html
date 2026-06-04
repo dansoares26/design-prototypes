@@ -267,8 +267,10 @@
   .tag-stroke-arc {
     fill: none;
     stroke: url(#tagArcGrad);
-    stroke-width: 1.5;
+    stroke-width: 2.5;
     stroke-linecap: round;
+    filter: blur(1.5px);
+    opacity: 0; /* starts hidden */
   }
   /* Reduced-motion: static full-border gradient, no animation */
   @media (prefers-reduced-motion: reduce) {
@@ -713,16 +715,27 @@ function setupTagStroke() {
   base.setAttribute('stroke-dasharray', perimeter); // full stroke, very faint
   arc.setAttribute('stroke-dasharray', arcLen + ' ' + gapLen);
 
-  // Animate via Web Animations API — stroke-dashoffset travels -perimeter
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    arc.animate(
-      [{ strokeDashoffset: 0 }, { strokeDashoffset: -perimeter }],
-      { duration: 5000, iterations: Infinity, easing: 'linear' }
-    );
+    // 9 s cycle:
+    //  0 %  –  6 %  fade in   (0 – 0.54 s)
+    //  6 %  – 72 %  travel    (0.54 – 6.5 s)
+    // 72 %  – 85 %  fade out  (6.5 – 7.65 s)
+    // 85 % – 100 %  invisible, arc resets to start
+    arc.animate([
+      { opacity: 0, strokeDashoffset: 0,                   easing: 'ease-out'  },
+      { opacity: 1, strokeDashoffset: -perimeter * 0.06,   easing: 'linear',   offset: 0.06 },
+      { opacity: 1, strokeDashoffset: -perimeter * 0.72,   easing: 'ease-in',  offset: 0.72 },
+      { opacity: 0, strokeDashoffset: -perimeter * 0.85,                       offset: 0.85 },
+      { opacity: 0, strokeDashoffset: 0 }
+    ], {
+      duration: 9000,
+      iterations: Infinity,
+    });
   } else {
-    // Static: show full border
+    // Reduced motion: static soft glow border
     arc.setAttribute('stroke-dasharray', perimeter);
     arc.setAttribute('stroke-dashoffset', 0);
+    arc.style.opacity = 0.6;
   }
 }
 
