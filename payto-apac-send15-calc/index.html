@@ -188,7 +188,27 @@
   ============================================ */
   .exchange-rate-row  { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: var(--space-sm); }
   .exchange-rate-label { font-size: 14px; color: var(--text-default); line-height: 1.4; }
-  .exchange-rate-link  { font-size: 14px; font-weight: 590; color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  /* ── Secondary: shimmer over the VND value every ~9s ── */
+  .exchange-rate-link {
+    font-size: 14px; font-weight: 590; color: var(--color-primary);
+    text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+    position: relative; display: inline-block; overflow: hidden;
+  }
+  .exchange-rate-link::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.72) 50%, transparent 100%);
+    transform: translateX(-150%);
+    animation: vndShimmer 9s linear infinite;
+    animation-delay: 2s;
+    pointer-events: none;
+  }
+  @keyframes vndShimmer {
+    0%    { transform: translateX(-150%); }
+    9%    { transform: translateX(150%); }
+    100%  { transform: translateX(150%); }
+  }
 
   .tag-benefit {
     display: inline-flex; flex-direction: row; align-items: center;
@@ -196,6 +216,47 @@
     background: #d3eeee; border-radius: var(--radius-pill);
     font-size: 13px; font-weight: 590; color: var(--text-default);
     line-height: 1; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── Primary: rotating conic-gradient glow sweeping around the tag ── */
+  .tag-sweep-wrap {
+    position: relative;
+    display: inline-flex;
+    border-radius: var(--radius-pill);
+    isolation: isolate;
+    flex-shrink: 0;
+  }
+  .tag-sweep-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: var(--radius-pill);
+    background: conic-gradient(
+      from 0deg,
+      #2DD4BF   0%,
+      #60A5FA  30%,
+      #3B82F6  52%,
+      transparent 65%,
+      transparent 90%,
+      #2DD4BF 100%
+    );
+    opacity: 0.38;
+    filter: blur(18px);
+    animation: tagSweep 5s linear infinite;
+    z-index: -1;
+  }
+  @keyframes tagSweep {
+    to { transform: rotate(360deg); }
+  }
+  /* Reduced-motion: static glow instead of sweep */
+  @media (prefers-reduced-motion: reduce) {
+    .tag-sweep-wrap::before {
+      animation: none;
+      background: radial-gradient(ellipse at 50% 50%, rgba(96,165,250,0.35) 0%, transparent 70%);
+      filter: blur(22px);
+      inset: -8px;
+    }
+    .exchange-rate-link::after { display: none; }
   }
 
   /* ============================================
@@ -482,10 +543,10 @@
 
         <!-- Exchange rate: narwhal Tag type="benefit" + Body text -->
         <div class="exchange-rate-row">
-          <div class="tag-benefit">
+          <span class="tag-sweep-wrap"><div class="tag-benefit">
             <div id="fire-lottie" style="width:16px;height:16px;flex-shrink:0;"></div>
             Top rate
-          </div>
+          </div></span>
           <span class="exchange-rate-label">1 AUD = <span class="exchange-rate-link" onclick="openRateSheet()">16,402 VND</span></span>
         </div>
       </div>
