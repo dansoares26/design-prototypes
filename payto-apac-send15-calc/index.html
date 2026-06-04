@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PayTo APAC — Send Calculator Initial State</title>
+<style>
+  /* ============================================
+     DESIGN TOKENS
+  ============================================ */
+  :root {
+    --bg-surface:     #fdfcfa;
+    --bg-default:     #ffffff;
+    --bg-medium:      #efece7;
+    --bg-strong:      #e1ddd7;
+    --border-default: #7e7c76;
+    --border-subtle:  #e1ddd7;
+    --text-default:   #242620;
+    --text-subtle:    #615f5a;
+    --text-benefit:   #397882;
+    --color-primary:  #2c415a;
+    --radius-input:   8px;
+    --radius-card:    12px;
+    --radius-pill:    100px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+    --max-w: 440px;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ============================================
+     MOBILE-FIRST BASE (all viewports)
+     Screen fills viewport edge-to-edge on mobile
+  ============================================ */
+  html {
+    height: 100%;
+    /* Prevent font size inflation on orientation change */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.4;
+    color: var(--text-default);
+    background: var(--bg-surface);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Presentation chrome — hidden on mobile */
+  .presentation-header { display: none; }
+  .vibe-badge          { display: none; }
+
+  /* ── MOBILE-FIRST: phone-frame is a plain full-width container ── */
+  .phone-frame {
+    width: 100%;
+    max-width: var(--max-w);   /* never wider than 440px */
+    margin: 0 auto;            /* centre on any screen > 440px */
+    background: var(--bg-surface);
+    position: relative;        /* contains absolute sheet/backdrop */
+    overflow: hidden;          /* clips sheet slide-up to the frame */
+    min-height: 100svh;        /* fills the phone screen height */
+  }
+
+  .screen {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ============================================
+     STATUS BAR
+  ============================================ */
+  .status-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 44px;
+    padding: 14px max(28px, env(safe-area-inset-right, 0px)) 0 max(28px, env(safe-area-inset-left, 0px));
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-surface);
+  }
+  .status-time  { font-size: 15px; font-weight: 600; color: var(--text-default); }
+  .status-icons { display: flex; align-items: center; gap: 6px; }
+
+  /* ============================================
+     TOP BAR
+  ============================================ */
+  .top-bar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    background: var(--bg-surface);
+    position: sticky;
+    top: 44px;
+    z-index: 9;
+    flex-shrink: 0;
+  }
+  .top-bar-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    padding: 0 var(--space-lg);
+  }
+  .top-bar-side        { flex: 1; display: flex; align-items: center; }
+  .top-bar-side.right  { justify-content: flex-end; }
+  .top-bar-logo        { width: 27px; height: 27px; display: flex; align-items: center; justify-content: center; }
+  .top-bar-icon-btn    { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .top-bar-icon-btn svg { width: 20px; height: 20px; stroke: var(--text-default); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .progress-wrap  { padding: 0 42px; }
+  .progress-track { height: 4px; background: var(--bg-strong); border-radius: var(--radius-pill); overflow: hidden; }
+  .progress-fill  { height: 100%; width: 8%; background: var(--color-primary); border-radius: var(--radius-pill); }
+
+  /* ============================================
+     SCREEN CONTENT — flex column, full width
+  ============================================ */
+  .screen-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    /* Horizontal padding + iOS safe-area insets */
+    padding-top: var(--space-lg);
+    padding-bottom: max(var(--space-3xl), env(safe-area-inset-bottom, 0px));
+    padding-left:  max(var(--space-lg), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-lg), env(safe-area-inset-right, 0px));
+    width: 100%;
+  }
+
+  /* ============================================
+     CALCULATOR CARD
+  ============================================ */
+  .calc-wrapper   { display: flex; flex-direction: column; gap: var(--space-sm); }
+  .calculator-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--bg-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-input);
+    width: 100%;
+  }
+
+  /* Amount rows — flex row: label+value left, currency right */
+  .amount-row   { display: flex; flex-direction: row; align-items: center; width: 100%; }
+  .amount-main  { display: flex; flex-direction: column; gap: var(--space-sm); flex: 1; min-width: 0; }
+  .amount-label { font-size: 14px; font-weight: 400; color: var(--text-default); line-height: 1; }
+  .amount-value { font-size: 24px; font-weight: 590; color: var(--text-subtle); line-height: 1.2; }
+  .calc-divider { height: 1px; background: var(--border-subtle); width: 100%; }
+
+  /* Currency selectors */
+  .currency-mini {
+    display: flex; flex-direction: row; align-items: center;
+    gap: var(--space-sm); flex-shrink: 0;
+  }
+  .currency-pill {
+    display: flex; flex-direction: row; align-items: center;
+    gap: var(--space-sm); padding: var(--space-sm);
+    background: var(--bg-medium); border-radius: var(--radius-pill);
+    flex-shrink: 0; cursor: pointer;
+  }
+  .flag-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    overflow: hidden; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flag-circle svg    { display: block; width: 32px; height: 32px; flex-shrink: 0; }
+  .currency-code      { font-size: 18px; font-weight: 590; color: var(--text-default); line-height: 1; white-space: nowrap; }
+  .currency-chevron svg { width: 16px; height: 16px; stroke: var(--text-default); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+  /* ============================================
+     EXCHANGE RATE ROW
+  ============================================ */
+  .exchange-rate-row  { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: var(--space-sm); }
+  .exchange-rate-label { font-size: 14px; color: var(--text-default); line-height: 1.4; }
+  .exchange-rate-link  { font-size: 14px; font-weight: 590; color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  .tag-benefit {
+    display: inline-flex; flex-direction: row; align-items: center;
+    gap: var(--space-xs); padding: 5px 10px;
+    background: #d3eeee; border-radius: var(--radius-pill);
+    font-size: 13px; font-weight: 590; color: var(--text-default);
+    line-height: 1; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ============================================
+     FORM DROPDOWNS — CSS Grid for label+field pairs
+  ============================================ */
+  .form-fields { display: flex; flex-direction: column; gap: var(--space-xl); width: 100%; }
+  .field-group {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: var(--space-xs);
+  }
+  .field-label    { font-size: 14px; font-weight: 400; color: var(--text-default); line-height: 1; }
+  .field-select {
+    display: flex; flex-direction: row; align-items: center;
+    gap: var(--space-md); min-height: 48px;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-input);
+    cursor: pointer; overflow: hidden; width: 100%;
+  }
+  .field-placeholder {
+    flex: 1; font-size: 18px; font-weight: 400;
+    color: var(--text-subtle); line-height: 1.4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .field-chevron svg { width: 24px; height: 24px; stroke: var(--text-default); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; flex-shrink: 0; }
+
+  /* ============================================
+     PRICING CARD — CSS Grid for two-column rows
+  ============================================ */
+  .pricing-card {
+    display: flex; flex-direction: column; gap: var(--space-md);
+    padding: var(--space-lg); width: 100%;
+    background: var(--bg-medium); border-radius: var(--radius-card);
+  }
+  .pricing-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-sm);
+    align-items: start;
+  }
+  .pricing-label       { font-size: 16px; color: var(--text-default); line-height: 1.4; }
+  .pricing-value       { font-size: 16px; color: var(--text-default); line-height: 1.4; text-align: right; }
+  .pricing-value.discount { color: var(--text-benefit); }
+  .pricing-divider     { height: 1px; background: var(--border-subtle); }
+  .pricing-total-label { font-size: 16px; font-weight: 590; color: var(--text-default); line-height: 1.4; }
+  .pricing-total-value {
+    font-size: 16px; font-weight: 590; text-align: right;
+    color: var(--color-primary); text-decoration: underline;
+    text-underline-offset: 2px; cursor: pointer;
+  }
+
+  /* ============================================
+     BOTTOM SHEET
+  ============================================ */
+  /* .phone-frame is the positioning parent for backdrop + sheet */
+  .phone-frame { position: relative; overflow: hidden; }
+
+  .sheet-backdrop {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+  .sheet-backdrop.open    { display: block; opacity: 1; }
+  .sheet-backdrop.closing { opacity: 0; }
+
+  .bottom-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 51;
+    background: #ffffff;
+    border-radius: 16px 16px 0 0;
+    padding: var(--space-lg) var(--space-lg) max(var(--space-2xl), env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+    transform: translateY(100%);
+    transition: transform 350ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .bottom-sheet.open    { transform: translateY(0); }
+  .bottom-sheet.closing { transform: translateY(100%); }
+
+  .sheet-close-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: calc(-1 * var(--space-xl));
+  }
+  .sheet-close-btn {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    padding: 0; margin: -8px -8px 0 0;
+  }
+  .sheet-close-btn svg {
+    width: 20px; height: 20px;
+    stroke: var(--text-default); fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .sheet-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+    text-align: center;
+    padding: 0 var(--space-lg);
+  }
+
+  /* Avatar circle — 56px filled */
+  .sheet-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--bg-medium);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sheet-avatar svg {
+    width: 24px; height: 24px;
+  }
+
+  .sheet-heading {
+    font-size: 22px; font-weight: 590;
+    color: var(--text-default); line-height: 1.2;
+  }
+  .sheet-rate {
+    font-size: 20px; font-weight: 590;
+    color: var(--text-benefit); line-height: 1.2;
+  }
+  .sheet-copy {
+    font-size: 18px; font-weight: 400;
+    color: var(--text-default); line-height: 1.4;
+  }
+
+  /* ============================================
+     BUTTON
+  ============================================ */
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 56px;
+    background: var(--color-primary); color: #fff;
+    border: none; border-radius: var(--radius-pill);
+    font-family: var(--font); font-size: 18px; font-weight: 590;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  /* ============================================
+     DISCLAIMER
+  ============================================ */
+  .disclaimer       { font-size: 14px; color: var(--text-default); line-height: 1.4; }
+  .disclaimer strong { font-weight: 590; }
+
+  /* ============================================
+     MODALS
+  ============================================ */
+  .vibe-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .vibe-modal-overlay.visible { display: flex; }
+  .vibe-modal { background: #fff; border-radius: 16px; padding: 24px; max-width: 320px; margin: 16px; font-size: 14px; line-height: 1.5; color: #000; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+  .vibe-modal button { margin-top: 16px; width: 100%; height: 44px; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-pill); font-family: var(--font); font-size: 16px; font-weight: 600; cursor: pointer; }
+
+  /* ============================================
+     DESKTOP BREAKPOINT (min-width: 441px)
+     Show phone-frame mockup, center at 440px
+  ============================================ */
+  /* ── DESKTOP: show the phone-frame mockup ── */
+  @media (min-width: 441px) {
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f0ede8;
+      padding: var(--space-2xl) var(--space-lg) 64px;
+    }
+
+    .presentation-header {
+      display: block;
+      text-align: center;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: var(--max-w);
+    }
+    .presentation-header h1 { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+    .presentation-header p  { font-size: 13px; color: #666; margin-top: 4px; }
+
+    .vibe-badge {
+      display: block;
+      margin-top: 24px;
+      font-size: 12px; color: #999; text-align: center;
+    }
+    .vibe-badge code { font-size: 11px; background: #e0e0e0; padding: 1px 5px; border-radius: 3px; }
+    .vibe-badge a    { color: #666; text-decoration: underline; cursor: pointer; }
+
+    /* Add frame chrome — base mobile styles already set position/overflow/max-width */
+    .phone-frame {
+      height: 896px;
+      min-height: unset;
+      border-radius: 44px;
+      box-shadow: 0 0 0 12px #1a1a1a, 0 30px 80px rgba(0,0,0,0.35);
+      flex-shrink: 0;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="presentation-header">
+  <h1>PayTo APAC — Send Calculator</h1>
+  <p>Initial state · AUD → VND</p>
+</div>
+
+<div class="phone-frame">
+  <div class="screen">
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="3" width="3" height="9" rx="0.5"/><rect x="13.5" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 4.5C4 1.5 12 1.5 15 4.5"/><path d="M3 7C5 5 11 5 13 7"/><path d="M5.5 9.5C6.5 8.5 9.5 8.5 10.5 9.5"/><circle cx="8" cy="12" r="0.8" fill="currentColor" stroke="none"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="18" height="9" rx="2" fill="currentColor"/><path d="M23 4v4c.8-.4 1.3-1.1 1.3-2s-.5-1.6-1.3-2z" fill="currentColor" fill-opacity="0.4"/></svg>
+      </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="top-bar-row">
+        <div class="top-bar-side"><!-- left placeholder --></div>
+        <div class="top-bar-logo"></div>
+        <div class="top-bar-side right">
+          <div class="top-bar-icon-btn">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- Screen Content -->
+    <div class="screen-content">
+
+      <!-- Calculator -->
+      <div class="calc-wrapper">
+        <div class="calculator-card">
+          <!-- You send row -->
+          <div class="amount-row">
+            <div class="amount-main">
+              <span class="amount-label">You send</span>
+              <span class="amount-value">0.00</span>
+            </div>
+            <div class="currency-mini">
+              <div class="flag-circle"><svg width="32" height="32" viewBox="0 0 86 86" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#aus-c1)"><g clip-path="url(#aus-c2)"><path d="M86 43C86 66.7481 66.7481 86 43 86C19.2519 86 0 66.7481 0 43C0 43.0101 43 0.00487109 43 0C66.7481 0 86 19.2519 86 43Z" fill="#0052B4"/><path d="M43 0C42.9977 0 42.9951 0.00358333 42.9928 0.00358333L43 0Z" fill="#F0F0F0"/><path d="M42.8849 42.9996H43C43 42.9606 43 42.9233 43 42.8845C42.9617 42.923 42.9234 42.9613 42.8849 42.9996Z" fill="#F0F0F0"/><path d="M43 22.4348C43 14.8687 43 9.91072 43 6.10352e-05H42.9928C19.2479 0.00392432 0 19.254 0 42.9999H22.4347V30.3666L35.068 42.9999H42.8851C42.9236 42.9616 42.9619 42.9233 43.0002 42.8848C43.0002 39.9879 43.0002 37.403 43.0002 35.0682L30.3667 22.4348H43Z" fill="#F0F0F0"/><path d="M21.7544 5.60858C15.0291 9.4381 9.4381 15.0291 5.60858 21.7544V42.9999H16.826V16.8262V16.826H42.9999C42.9999 13.2881 42.9999 9.91765 42.9999 5.60858H21.7544Z" fill="#D80027"/><path d="M42.9998 37.7123L27.7226 22.4352H22.4348L42.9997 43.0001H42.9998C42.9998 43.0001 42.9998 39.3544 42.9998 37.7123Z" fill="#D80027"/><path d="M25.9336 50.4781L28.2936 55.4127L33.6227 54.181L31.2362 59.1028L35.5218 62.5013L30.1859 63.7039L30.2009 69.1737L25.9336 65.7517L21.6665 69.1737L21.6815 63.7039L16.3455 62.5013L20.6312 59.1028L18.2443 54.181L23.5738 55.4127L25.9336 50.4781Z" fill="#F0F0F0"/><path d="M64.3798 59.8257L65.5598 62.293L68.2244 61.677L67.031 64.1379L69.174 65.8373L66.506 66.4386L66.5133 69.1735L64.3798 67.4624L62.2463 69.1735L62.2537 66.4386L59.5858 65.8373L61.7286 64.1379L60.5353 61.677L63.1998 62.293L64.3798 59.8257Z" fill="#F0F0F0"/><path d="M53.403 33.6514L54.5828 36.1189L57.2474 35.5028L56.0542 37.9637L58.197 39.663L55.5291 40.2644L55.5363 42.9992L53.403 41.2881L51.2694 42.9992L51.2766 40.2644L48.6088 39.663L50.7516 37.9637L49.5583 35.5028L52.223 36.1189L53.403 33.6514Z" fill="#F0F0F0"/><path d="M64.3798 18.6953L65.5598 21.1627L68.2244 20.5468L67.0312 23.0077L69.1738 24.7069L66.506 25.3083L66.5133 28.0432L64.3798 26.3321L62.2463 28.0432L62.2537 25.3083L59.5858 24.7069L61.7284 23.0077L60.5353 20.5468L63.1998 21.1627L64.3798 18.6953Z" fill="#F0F0F0"/><path d="M73.9682 29.9124L75.148 32.3799L77.8127 31.7638L76.6194 34.2247L78.7622 35.924L76.0942 36.5255L76.1016 39.2602L73.9682 37.5493L71.8347 39.2602L71.8419 36.5255L69.174 35.924L71.3168 34.2247L70.1236 31.7638L72.7881 32.3799L73.9682 29.9124Z" fill="#F0F0F0"/><path d="M67.1119 43L68.04 45.8565H71.0436L68.6136 47.622L69.5419 50.4783L67.1119 48.713L64.6821 50.4783L65.6101 47.622L63.1803 45.8565H66.1837L67.1119 43Z" fill="#F0F0F0"/></g></g><defs><clipPath id="aus-c1"><rect width="86" height="86" fill="white"/></clipPath><clipPath id="aus-c2"><rect width="86" height="86" fill="white"/></clipPath></defs></svg></div>
+              <span class="currency-code">AUD</span>
+            </div>
+          </div>
+
+          <div class="calc-divider"></div>
+
+          <!-- They receive row -->
+          <div class="amount-row">
+            <div class="amount-main">
+              <span class="amount-label">They receive</span>
+              <span class="amount-value">0</span>
+            </div>
+            <div class="currency-pill">
+              <div class="flag-circle"><svg width="32" height="32" viewBox="0 0 86 86" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#vnm-c1)"><g clip-path="url(#vnm-c2)"><path d="M43 86C66.7482 86 86 66.7482 86 43C86 19.2518 66.7482 0 43 0C19.2518 0 0 19.2518 0 43C0 66.7482 19.2518 86 43 86Z" fill="#D80027"/><path d="M43.0001 22.4346L47.6408 36.7168H62.658L50.5087 45.5435L55.1493 59.8259L43.0001 50.999L30.8509 59.8259L35.4916 45.5435L23.3424 36.7168H38.3595L43.0001 22.4346Z" fill="#FFDA44"/></g></g><defs><clipPath id="vnm-c1"><rect width="86" height="86" fill="white"/></clipPath><clipPath id="vnm-c2"><rect width="86" height="86" fill="white"/></clipPath></defs></svg></div>
+              <span class="currency-code">VND</span>
+              <div class="currency-chevron"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Exchange rate: narwhal Tag type="benefit" + Body text -->
+        <div class="exchange-rate-row">
+          <div class="tag-benefit">
+            <div id="fire-lottie" style="width:16px;height:16px;flex-shrink:0;"></div>
+            Top rate
+          </div>
+          <span class="exchange-rate-label">1 AUD = <span class="exchange-rate-link" onclick="openRateSheet()">16,402 VND</span></span>
+        </div>
+      </div>
+
+      <!-- Dropdown fields -->
+      <div class="form-fields">
+        <div class="field-group">
+          <span class="field-label">Delivery method</span>
+          <div class="field-select">
+            <span class="field-placeholder">Selection required</span>
+            <div class="field-chevron">
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">Payment method</span>
+          <div class="field-select">
+            <span class="field-placeholder">Selection required</span>
+            <div class="field-chevron">
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing breakdown -->
+      <div class="pricing-card">
+        <div class="pricing-line">
+          <span class="pricing-label">Flat fee</span>
+          <span class="pricing-value">1.99 AUD</span>
+        </div>
+        <div class="pricing-line">
+          <span class="pricing-label">Fee discount</span>
+          <span class="pricing-value discount">−1.99 AUD</span>
+        </div>
+        <div class="pricing-divider"></div>
+        <div class="pricing-line">
+          <span class="pricing-total-label">Total</span>
+          <span class="pricing-total-value">0.00 AUD</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <button class="btn-primary">Continue</button>
+
+      <!-- Disclaimer -->
+      <p class="disclaimer">Delivery speed is an <strong>estimate.</strong></p>
+
+    </div><!-- /.screen-content -->
+  </div><!-- /.screen -->
+
+  <!-- ===== RATE BOTTOM SHEET — sibling of .screen, inside .phone-frame ===== -->
+  <div class="sheet-backdrop" id="rateBackdrop" onclick="closeRateSheet()"></div>
+  <div class="bottom-sheet" id="rateSheet">
+    <div class="sheet-close-row">
+      <button class="sheet-close-btn" onclick="closeRateSheet()" aria-label="Close">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-avatar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.1472 1C10.173 1.07415 10.2413 1.46918 10.259 1.563L10.4612 2.65517C10.5253 3.00249 10.5616 3.1429 10.6782 3.47514C10.9991 4.2117 11.4056 5.09739 11.7112 5.84072C11.809 6.07883 11.9082 6.31484 12.0326 6.5406C12.1724 6.79696 12.3415 7.03635 12.5365 7.25402C13.4569 8.28395 14.2239 8.1408 15.1416 7.2024C15.306 7.03433 15.4373 6.85087 15.5915 6.67642C15.7544 6.49444 15.9268 6.32114 16.108 6.15725C16.5693 5.73301 17.0735 5.37026 17.5392 4.94711C17.6902 5.2876 17.7965 5.89347 17.8643 6.26832C17.9942 7.02082 18.1127 7.77522 18.2199 8.53126C18.2977 9.0516 18.3606 9.58153 18.5062 10.0879C18.5662 10.2964 18.6215 10.507 18.6815 10.7158C18.8404 11.2696 19.0053 11.8218 19.1761 12.3721C19.2786 12.7029 19.4281 13.0886 19.5091 13.4182C19.7557 14.4215 20.0471 15.5532 19.9936 16.5853C19.9732 16.9971 19.8948 17.4041 19.7608 17.7941C19.3753 18.9322 18.4299 20.2307 17.5396 21.0302C16.5059 21.9631 15.2405 22.6028 13.875 22.8824C13.479 22.9626 13.1394 23.0167 12.7333 22.9953C12.9472 22.925 13.1325 22.8843 13.3496 22.7998C14.1125 22.5029 14.7992 21.9292 15.1239 21.1678C15.6571 19.9175 15.1488 18.5487 14.7446 17.3416C14.5756 16.8365 14.4042 16.2564 14.2128 15.7687C14.1877 15.8736 14.1666 15.9892 14.1486 16.0956C14.0311 16.7884 13.9262 17.4737 13.7231 18.1487C13.6394 18.4155 13.5381 18.6956 13.381 18.9283C13.2707 19.092 13.116 19.2484 12.9125 19.2818C12.723 19.313 12.533 19.2178 12.3859 19.1067C12.2167 18.9789 11.9649 18.7536 11.8604 18.5703C11.4108 17.7824 11.4083 15.8606 11.3805 14.9367C11.3695 14.5714 11.3699 14.1997 11.3203 13.8372C11.2104 14.004 11.0941 14.2186 10.9925 14.3941C10.8437 14.6505 10.6923 14.9055 10.5384 15.1588C9.77863 16.4214 9.08549 17.53 8.80453 19.0042C8.49042 20.6519 8.96789 22.136 10.6536 22.7514C10.7434 22.7843 11.3143 22.9509 11.3175 22.9533L11.2928 22.9721C11.1649 22.9989 10.8832 22.9391 10.7486 22.9174C7.96167 22.4701 5.29587 20.9685 4.38116 18.1542C3.54367 15.5776 4.2085 12.7738 5.1953 10.3319C5.46409 9.66674 5.77424 9.00365 6.12222 8.37591C6.41175 7.86871 6.77684 7.36812 7.13662 6.90708C7.50012 6.44131 7.78276 5.94129 8.06356 5.42436C8.59943 4.4378 9.06506 3.41571 9.52295 2.39161C9.73003 1.93493 9.92436 1.44584 10.1472 1Z" fill="#252622"/></svg>
+      </div>
+      <p class="sheet-heading">You picked a good day to send</p>
+      <p class="sheet-rate">1 AUD = 19,402.05 VND</p>
+      <p class="sheet-copy">It's 2% better than usual — so your dollars are stretching further back home today.</p>
+    </div>
+  </div>
+</div><!-- /.phone-frame -->
+
+<div class="vibe-badge">
+  <p>Vibe design made with <code>/design</code> · <a onclick="document.querySelector('.vibe-modal-overlay').classList.add('visible')">About</a></p>
+</div>
+
+<div class="vibe-modal-overlay" onclick="if(event.target===this)this.classList.remove('visible')">
+  <div class="vibe-modal">
+    <p>This is a vibe design. It uses Remitly-inspired styles to explore ideas quickly. It doesn't exactly match how Remitly looks and works today, and may look quite different if built in our design system.</p>
+    <button onclick="this.closest('.vibe-modal-overlay').classList.remove('visible')">Got it</button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
+    s.async = true;
+    s.onload = function() {
+      lottie.loadAnimation({
+    container: document.getElementById('fire-lottie'),
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    animationData: {"nm":"Main Scene","ddd":0,"h":20,"w":20,"meta":{"g":"@lottiefiles/creator@1.94.0"},"layers":[{"ty":4,"nm":"Shape Layer 1","sr":1,"st":0,"op":75,"ip":0,"hd":false,"ddd":0,"bm":0,"hasMask":false,"ao":0,"ks":{"a":{"a":0,"k":[10.07031041070178,20.20312451418475]},"s":{"a":0,"k":[81.40833360082021,81.40833360082024]},"sk":{"a":0,"k":0},"p":{"a":0,"k":[9.990075062332144,20.19792472393646]},"r":{"a":0,"k":0},"sa":{"a":0,"k":0},"o":{"a":0,"k":100}},"shapes":[{"ty":"gr","bm":0,"hd":false,"nm":"Group 1","np":2,"it":[{"ty":"sh","bm":0,"hd":false,"nm":"Path 1","d":1,"ks":{"a":1,"k":[{"o":{"x":0.167,"y":0.167},"i":{"x":0.833,"y":0.833},"s":[{"c":true,"i":[[0,0],[-0.5015244126296601,-1.4160477647802328],[-0.4232128906250008,-0.22708984374999996],[-1.21,0.78],[-0.25,-0.47],[-0.18,-0.93],[-0.31,-0.91],[0.09276357583584982,-1.0544746050005767],[0.9015966796875006,-1.231689453125],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.16,1.29],[0.25,0.75],[0.05,0.06],[0.83,0.69],[0.14,0.47],[0.37,-1.92],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.2509777677466625,0.3421850323746911],[-0.2352294921875,0.3153076171875],[-1.07,1.14]],"o":[[0.1548437499999995,0.5467919921875],[0.5349256348633205,1.5103556885698346],[0.13,0.11],[0.96,-0.72],[0.31,0.59],[0.24,0.93],[0.4768847656250017,1.3799218750000009],[-0.09008512802538604,1.0240277925366534],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.1,-0.81],[-0.24,-0.72],[-0.35,0.61],[-0.36,-0.18],[-1.26,1.36],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.2514684378693346,-0.34285401582019404],[0.96,-1.24],[0,0]],"v":[[8.42,0],[9.51218754052883,3.4274854669591877],[11.08,6.62],[12.99,5.97],[16.19,4.41],[16.5,7.5],[17.5,10],[18.149956107811306,13.51318625537213],[16.73,16.77],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.42,17.34],[12.94,14.96],[12.63,13.39],[10.54,14.36],[9.45,11.59],[6.85,15.89],[9.41,19.9],[9.3,19.94],[3.37,16.92],[3.92,5.52],[4.588013955395436,4.471003446571995],[5.34,3.48],[8.42,0]]}],"t":0},{"o":{"x":0.167,"y":0.167},"i":{"x":0.833,"y":0.833},"s":[{"c":true,"i":[[0,0],[-0.33035333547888257,-0.7019174759503781],[-0.531302832237369,-0.20875319670741188],[-0.6615986690211031,1.1853176460643127],[-0.5072477735107661,1.2294335578597004],[-0.18,-0.93],[-0.31,-0.91],[0.09394914561144674,-0.9345491326678879],[0.8926611328125027,-1.219482421875],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.16,1.29],[0.25,0.75],[0.05,0.06],[2.3853223971418984,2.9867182187155485],[0.14,0.47],[0.37,-1.92],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.2838471524525632,0.4204980707900985],[-0.2352294921875,0.3153076171875],[-0.8756438380500491,3.203641299751279]],"o":[[0.15421875000000007,0.5445849609375],[0.35512146802745015,0.7545435075819156],[0.8816449303420342,0.08574641238801028],[0.4281766572662207,-1.189665933566137],[0.31,0.59],[0.24,0.93],[0.20004522115020862,1.3966377840442128],[-0.08947111197887381,0.8900043694330027],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.1,-0.81],[-0.24,-0.72],[-0.08929198969253349,1.3591793735372306],[-1.2752970007915039,-0.902456320297695],[-1.0388928887705333,2.7245703637487235],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.2844020833468983,-0.4213201589050346],[0.9936645548610521,-1.8172861032641467],[0,-0.11103264805245594]],"v":[[8.844586335309387,0.0415038239923895],[10.173874614490657,2.1585503774293784],[11.857697163987226,2.8803608005288375],[13.72644919688284,1.802466418705695],[15.129068955157365,-0.8887953034747769],[16.549739193783736,5.625480179197137],[17.76167800194838,10.502942969334791],[18.072334761293614,13.788342459697942],[16.73,16.77],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.42,17.34],[13.189205456203403,14.953802597442387],[11.970386775813752,11.921309274737364],[9.734764669531685,16.973244343470604],[9.30715612672338,9.820035821646742],[6.85,15.89],[9.41,19.9],[9.3,19.94],[3.37,16.92],[3.969692933394109,5.520000000000003],[4.694959988572389,4.288220486734392],[5.521299119270477,3.166441337966665],[7.988897113446903,-4.504986157259362]]}],"t":14},{"o":{"x":0.167,"y":0.167},"i":{"x":0.833,"y":0.833},"s":[{"c":true,"i":[[-0.4384695550402631,-0.3530573437233464],[-0.44210829361572657,-0.3065025045583232],[-0.4840722656250005,-0.25974609375],[-0.6326133667411327,1.4237639425017314],[0.0012732018246133237,0.004102539212636369],[-0.13203822284330968,-1.0066153555270798],[-0.02197745322266087,-1.2280734541641554],[0.06996790836713274,-0.6974433358128334],[0.65678005008564,-0.8463779478072411],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.16,1.29],[0.25,0.75],[0.05,0.06],[0.83,0.69],[0.14,0.47],[0.14715025998735598,-0.7999134237432735],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.26433142167327467,0.4633171395146509],[-0.19567637360211876,0.7974843867746961],[-0.4616964361941118,1.1730026064436951]],"o":[[0.5534307481393821,0.5261464589294143],[0.6370785780469781,0.4416704743873807],[1.967492828011732,-0.9182759208235027],[0.6589526776710564,-1.6891144206510065],[1.065669927199668,2.9245445911321823],[0.07556018572022438,1.2352169343586112],[0.04607513128318885,1.2247979045684172],[-0.10542288274166722,1.0508601546947336],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.1,-0.81],[-0.24,-0.72],[-0.35,0.61],[-0.36,-0.18],[-1.2553236278468747,1.8297091074319844],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.46009187073721414,-0.8064438503546363],[0.3176182004873853,-1.160033142519001],[0,0]],"v":[[8.161276324193071,1.8099391175901158],[9.762099074588821,2.9821739893654358],[11.321272219225225,3.91228454010194],[13.713163445771238,-0.16401909496610667],[14.722812492688009,-3.584829463957898],[17.705894152184616,8.070191149447306],[18.043748697782938,12.272990106551948],[18.033205371935928,15.069130062344678],[16.97642905745689,17.616632054308575],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.42,17.34],[12.41543301574569,11.615885475378754],[12.10543301574569,10.045885475378753],[10.28346148809294,13.159605641706396],[8.860880906770443,12.138134385258052],[6.887735514581421,16.17023080426754],[9.41,19.9],[9.3,19.94],[3.37,16.92],[4.062008150393222,8.021299881510963],[5.093120688865295,5.858108057098779],[6.11164356401189,3.3909581522151275],[7.1415327509237665,0.6909658384333222]]}],"t":24},{"o":{"x":0,"y":0},"i":{"x":1,"y":1},"s":[{"c":true,"i":[[0,0],[-0.5015244126296601,-1.4160477647802328],[-0.4232128906250008,-0.22708984374999996],[-1.2222558084168558,0.45212473300276823],[-1.4051303751530284,0.5713863252402929],[-0.7281601801735285,-2.102489923143052],[-0.31,-0.91],[0.10063939004321298,-0.8082260115398103],[0.8926611328125027,-1.219482421875],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.42649476147960996,1.008858428735067],[0.17669257823936896,0.7705710433147127],[0.05,0.06],[3.294509199089127,1.127867796798462],[0.14,0.47],[0.37,-1.92],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.2509777677466625,0.3421850323746911],[-0.2352294921875,0.3153076171875],[-1.07,1.14]],"o":[[0.1548437499999995,0.5467919921875],[0.5349256348633205,1.5103556885698346],[0.13,0.11],[1.151422897134557,-0.5109088768302898],[-0.43065882636967245,1.396449796485392],[0.24,0.93],[0.48147460937499886,1.3932031249999994],[-0.09584246964077536,0.7697023694263763],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.25369084950079923,-0.9132647752999823],[-0.17908650954102256,-0.7810111770154045],[-0.35,0.61],[-2.390095382099119,-0.6432385061849502],[-1.26,1.36],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.2514684378693346,-0.34285401582019404],[0.96,-1.24],[0,0]],"v":[[8.42,1],[9.51218754052883,4.427485466959187],[11.08,7.620000000000001],[12.99,6.969999999999999],[16.360791551311866,5.120443768165283],[16.5,8.5],[17.5,11],[17.870150343249207,14.17656631980545],[16.73,16.77],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.275789747890666,17.95071375949685],[13.328237877524785,15.34570349351829],[12.63,13.39],[9.284870445460214,17.689635151492993],[9.45,11.59],[6.85,15.89],[9.41,19.9],[9.3,19.94],[3.37,16.92],[3.92,6.52],[4.588013955395436,5.471003446571995],[5.34,4.48],[8.42,1]]}],"t":36},{"o":{"x":0,"y":0},"i":{"x":1,"y":1},"s":[{"c":true,"i":[[0,0],[-0.33035333547888257,-0.7019174759503781],[-0.531302832237369,-0.20875319670741188],[-0.5105013680020924,0.7281286261594175],[-0.5072477735107661,1.2294335578597004],[-0.18,-0.93],[-0.31,-0.91],[0.09394914561144674,-0.9345491326678879],[0.8926611328125027,-1.219482421875],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.16,1.29],[0.25,0.75],[0.05,0.06],[2.393313652354337,1.2620989963587341],[0.14,0.47],[0.37,-1.92],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.2838471524525632,0.4204980707900985],[-0.2352294921875,0.3153076171875],[-0.8756438380500491,3.203641299751279]],"o":[[0.15421875000000007,0.5445849609375],[0.35512146802745015,0.7545435075819156],[0.8816449303420342,0.08574641238801028],[0.7551729491760426,-0.953869181221731],[0.31,0.59],[0.24,0.93],[0.20004522115020862,1.3966377840442128],[-0.08947111197887381,0.8900043694330027],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.1,-0.81],[-0.24,-0.72],[-0.08929198969253349,1.3591793735372306],[-0.36,-0.18],[-1.0388928887705333,2.7245703637487235],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.2844020833468983,-0.4213201589050346],[0.9936645548610521,-1.8172861032641467],[0,-0.11103264805245594]],"v":[[9.016315200729279,0.34785053375874053],[9.748877475868802,2.3693277104510013],[11.085599669271762,4.002745100283159],[13.388503316264057,3.0207180062735275],[15.035748847052162,0.6282194744458351],[16.863517053454128,7.389952450423541],[17.76167800194838,10.502942969334791],[18.072334761293614,13.788342459697942],[16.73,16.77],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.42,17.34],[12.871653532645139,15.01217090924655],[12.25246401836199,9.593584816467835],[9.263407813746923,14.148877033270251],[9.817776592762172,8.325319536596554],[6.85,15.89],[9.41,19.9],[9.3,19.94],[3.37,16.92],[3.969692933394109,5.520000000000003],[4.694959988572389,4.288220486734392],[5.521299119270477,3.166441337966665],[8.115813758901812,-4.008558259870623]]}],"t":49},{"o":{"x":0,"y":0},"i":{"x":1,"y":1},"s":[{"c":true,"i":[[-0.18455703623870434,-0.7337480234220992],[-0.44210829361572657,-0.3065025045583232],[-0.5564814899250372,0.335337818596948],[-0.6326133667411327,1.4237639425017314],[0.0012732018246133237,0.004102539212636369],[-0.13203822284330968,-1.0066153555270798],[-0.02197745322266087,-1.2280734541641554],[0.06996790836713274,-0.6974433358128334],[0.65678005008564,-0.8463779478072411],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.16,1.29],[0.25,0.75],[0.05,0.06],[2.4926498937387365,1.5448286815909995],[-0.25400541617873884,3.8482002011647296],[0.14715025998735598,-0.7999134237432735],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.26433142167327467,0.4633171395146509],[-0.4462363946292456,1.1426082434433944],[-0.1576690978447104,1.602640684134057]],"o":[[0.4364937089824288,0.9319484504016065],[0.6370785780469781,0.4416704743873807],[1.967492828011732,-0.9182759208235027],[0.6589526776710564,-1.6891144206510065],[1.065669927199668,2.9245445911321823],[0.07556018572022438,1.2352169343586112],[0.04607513128318885,1.2247979045684172],[-0.10542288274166722,1.0508601546947336],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.1,-0.81],[-0.24,-0.72],[-0.35,0.61],[-0.36,-0.18],[-1.2553236278468747,1.8297091074319844],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.46009187073721414,-0.8064438503546363],[0.3176182004873853,-1.160033142519001],[0,0]],"v":[[8.161276324193071,1.8099391175901158],[9.49228601817591,3.600113041571988],[11.321272219225225,3.91228454010194],[13.713163445771238,-0.16401909496610667],[14.66990925729521,-4.613461524275952],[17.705894152184616,8.070191149447306],[18.043748697782938,12.272990106551948],[18.033205371935928,15.069130062344678],[16.97642905745689,17.616632054308575],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.42,17.34],[12.41543301574569,11.615885475378754],[11.503442001905242,7.4885363512519945],[10.057266952119463,17.00215059701605],[8.860880906770443,12.138134385258052],[6.887735514581421,16.17023080426754],[9.41,19.9],[9.3,19.94],[3.37,16.92],[4.062008150393222,8.021299881510963],[5.093120688865295,5.858108057098779],[6.388832608932503,3.301527187528566],[7.17011583648177,-1.0213981503575287]]}],"t":62},{"s":[{"c":true,"i":[[0,0],[-0.5015244126296601,-1.4160477647802328],[-0.4232128906250008,-0.22708984374999996],[-1.21,0.78],[-0.25,-0.47],[-0.18,-0.93],[-0.31,-0.91],[0.09276357583584982,-1.0544746050005767],[0.9015966796875006,-1.231689453125],[2.08,-0.3],[0.11,0],[0.05,0.01],[0,0],[0,0],[-0.16,1.29],[0.25,0.75],[0.05,0.06],[0.83,0.69],[0.14,0.47],[0.37,-1.92],[-2.09,-0.42],[0.04,-0.01],[1.4,1.85],[-1.69,3.35],[-0.2509777677466625,0.3421850323746911],[-0.2352294921875,0.3153076171875],[-1.07,1.14]],"o":[[0.1548437499999995,0.5467919921875],[0.5349256348633205,1.5103556885698346],[0.13,0.11],[0.96,-0.72],[0.31,0.59],[0.24,0.93],[0.4768847656250017,1.3799218750000009],[-0.09008512802538604,1.0240277925366534],[-1.26,1.7],[-0.12,0.02],[-0.05,0],[0,0],[0,0],[1.18,-0.33],[0.1,-0.81],[-0.24,-0.72],[-0.35,0.61],[-0.36,-0.18],[-1.26,1.36],[-0.41,2.09],[-0.04,0.02],[-2.2,-0.27],[-2.5,-3.3],[0.17982421875000032,-0.35465332031249996],[0.2514684378693346,-0.34285401582019404],[0.96,-1.24],[0,0]],"v":[[8.42,0],[9.51218754052883,3.4274854669591877],[11.08,6.62],[12.99,5.97],[16.19,4.41],[16.5,7.5],[17.5,10],[18.149956107811306,13.51318625537213],[16.73,16.77],[11.52,19.91],[11.03,19.96],[10.88,19.95],[10.83,19.93],[11.07,19.87],[13.42,17.34],[12.94,14.96],[12.63,13.39],[10.54,14.36],[9.45,11.59],[6.85,15.89],[9.41,19.9],[9.3,19.94],[3.37,16.92],[3.92,5.52],[4.588013955395436,4.471003446571995],[5.34,3.48],[8.42,0]]}],"t":75}]}},{"ty":"tr","a":{"a":0,"k":[291.3411785516324,123.34690437429663]},"s":{"a":0,"k":[100,100]},"sk":{"a":0,"k":0},"p":{"a":0,"k":[291.3411785516324,123.34690437429663]},"r":{"a":0,"k":0},"sa":{"a":0,"k":0},"o":{"a":0,"k":100}}]},{"ty":"fl","bm":0,"hd":false,"nm":"Fill","c":{"a":0,"k":[0.1412,0.149,0.1255]},"r":2,"o":{"a":0,"k":100}}],"ind":1}],"v":"5.7.0","fr":29.9700012207031,"op":75,"ip":0,"assets":[]}
+      });
+    };
+    document.head.appendChild(s);
+  })();
+</script>
+
+<script>
+function openRateSheet() {
+  var backdrop = document.getElementById('rateBackdrop');
+  var sheet    = document.getElementById('rateSheet');
+  backdrop.classList.remove('closing');
+  sheet.classList.remove('closing');
+  backdrop.classList.add('open');
+  // Slight delay so CSS transition fires after display:block
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      sheet.classList.add('open');
+    });
+  });
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRateSheet() {
+  var backdrop = document.getElementById('rateBackdrop');
+  var sheet    = document.getElementById('rateSheet');
+  backdrop.classList.add('closing');
+  sheet.classList.add('closing');
+  setTimeout(function() {
+    backdrop.classList.remove('open', 'closing');
+    sheet.classList.remove('open', 'closing');
+    document.body.style.overflow = '';
+  }, 350);
+}
+</script>
+
+<script>
+(function () {
+  function fit() {
+    var frame = document.querySelector('.phone-frame');
+    if (!frame) return;
+    var rect = frame.getBoundingClientRect();
+    var avail = window.innerHeight - rect.top - 80;
+    frame.style.zoom = Math.max(0.5, Math.min(1, avail / frame.offsetHeight));
+  }
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>
+</body>
+</html>
