@@ -186,14 +186,20 @@
   /* ============================================
      EXCHANGE RATE ROW
   ============================================ */
-  .exchange-rate-row  { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: var(--space-sm); }
-  .exchange-rate-label { font-size: 14px; color: var(--text-default); line-height: 1.4; }
+  .exchange-rate-row  { display: flex; flex-direction: row; align-items: baseline; justify-content: flex-end; gap: var(--space-sm); }
+  /* narwhal Body p3 benefit — same colour, regular weight, no decoration */
+  .exchange-rate-label {
+    font-size: 14px; font-weight: 400;
+    color: var(--text-benefit);
+    line-height: 1; /* tight so baseline aligns with the link */
+  }
 
   /* ── Secondary: shimmer over the VND value every ~9s ── */
   .exchange-rate-link {
     font-size: 14px; font-weight: 590; color: var(--text-benefit);
     text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
     position: relative; display: inline-block; overflow: hidden;
+    line-height: 1;
   }
   .exchange-rate-link::after {
     content: '';
