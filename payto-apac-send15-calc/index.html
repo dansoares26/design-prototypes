@@ -245,36 +245,11 @@
     line-height: 1; white-space: nowrap; flex-shrink: 0;
   }
 
-  /* ── Primary: SVG stroke-dashoffset arc travels the pill border ── */
   .tag-sweep-wrap {
-    position: relative;
     display: inline-flex;
-    border-radius: var(--radius-pill);
     flex-shrink: 0;
   }
-  .tag-stroke-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    overflow: visible;
-  }
-  .tag-stroke-base {
-    fill: none;
-    stroke: rgba(45,212,191,0.18);
-    stroke-width: 1.5;
-  }
-  .tag-stroke-arc {
-    fill: none;
-    stroke: url(#tagArcGrad);
-    stroke-width: 1;
-    stroke-linecap: round;
-    filter: blur(0.6px);
-    opacity: 0;
-  }
-  /* Reduced-motion: static full-border gradient, no animation */
   @media (prefers-reduced-motion: reduce) {
-    .tag-stroke-arc { animation: none !important; }
     .exchange-rate-link::after { display: none; }
   }
 
@@ -562,19 +537,7 @@
 
         <!-- Exchange rate: narwhal Tag type="benefit" + Body text -->
         <div class="exchange-rate-row">
-          <span class="tag-sweep-wrap">
-            <svg class="tag-stroke-svg" aria-hidden="true">
-              <defs>
-                <linearGradient id="tagArcGrad" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%"   stop-color="#2DD4BF"/>
-                  <stop offset="45%"  stop-color="#60A5FA"/>
-                  <stop offset="100%" stop-color="#3B82F6"/>
-                </linearGradient>
-              </defs>
-              <rect class="tag-stroke-base"/>
-              <rect class="tag-stroke-arc"/>
-            </svg>
-            <div class="tag-benefit">
+          <span class="tag-sweep-wrap"><div class="tag-benefit">
             <div id="fire-lottie" style="width:16px;height:16px;flex-shrink:0;"></div>
             Top rate
           </div></span>
@@ -680,71 +643,6 @@
 </script>
 
 <script>
-function setupTagStroke() {
-  var wrap = document.querySelector('.tag-sweep-wrap');
-  if (!wrap) return;
-  var svg  = wrap.querySelector('.tag-stroke-svg');
-  var base = wrap.querySelector('.tag-stroke-base');
-  var arc  = wrap.querySelector('.tag-stroke-arc');
-  var grad = document.getElementById('tagArcGrad');
-
-  var r = wrap.getBoundingClientRect();
-  var W = r.width, H = r.height;
-  var sw = 1.5, inset = sw / 2;
-  var rx = H / 2 - inset; // full pill
-
-  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-
-  [base, arc].forEach(function(el) {
-    el.setAttribute('x',      inset);
-    el.setAttribute('y',      inset);
-    el.setAttribute('width',  W - sw);
-    el.setAttribute('height', H - sw);
-    el.setAttribute('rx',     rx);
-    el.setAttribute('ry',     rx);
-  });
-
-  // Gradient spans the full width
-  if (grad) { grad.setAttribute('x2', W); }
-
-  // Perimeter of the rounded rect
-  var perimeter = 2 * (W - sw - 2 * rx) + 2 * Math.PI * rx;
-  var arcLen    = perimeter * 0.42;
-  var gapLen    = perimeter - arcLen;
-
-  base.setAttribute('stroke-dasharray', perimeter); // full stroke, very faint
-  arc.setAttribute('stroke-dasharray', arcLen + ' ' + gapLen);
-
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // 9 s cycle:
-    //  0 %  –  6 %  fade in   (0 – 0.54 s)
-    //  6 %  – 72 %  travel    (0.54 – 6.5 s)
-    // 72 %  – 85 %  fade out  (6.5 – 7.65 s)
-    // 85 % – 100 %  invisible, arc resets to start
-    // 9 s cycle — 0.4 s active flash, 8.6 s invisible pause
-    // 0 %– 1 %  fade in   (0 – 0.09 s)
-    // 1 %– 3.5 %  travel  (0.09 – 0.315 s)
-    // 3.5 %– 4.5 %  fade out (0.315 – 0.405 s)
-    // 4.5 %–100 %  invisible
-    arc.animate([
-      { opacity: 0, strokeDashoffset: 0,                   easing: 'ease-out' },
-      { opacity: 1, strokeDashoffset: -perimeter * 0.01,   easing: 'linear',  offset: 0.010 },
-      { opacity: 1, strokeDashoffset: -perimeter * 0.035,  easing: 'ease-in', offset: 0.035 },
-      { opacity: 0, strokeDashoffset: -perimeter * 0.045,                     offset: 0.045 },
-      { opacity: 0, strokeDashoffset: 0 }
-    ], {
-      duration: 9000,
-      iterations: Infinity,
-    });
-  } else {
-    // Reduced motion: static soft glow border
-    arc.setAttribute('stroke-dasharray', perimeter);
-    arc.setAttribute('stroke-dashoffset', 0);
-    arc.style.opacity = 0.6;
-  }
-}
-
-document.addEventListener('DOMContentLoaded', setupTagStroke);
 
 function openRateSheet() {
   var backdrop = document.getElementById('rateBackdrop');
