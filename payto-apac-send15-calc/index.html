@@ -267,7 +267,7 @@
   .tag-stroke-arc {
     fill: none;
     stroke: url(#tagArcGrad);
-    stroke-width: 1.5;
+    stroke-width: 1;
     stroke-linecap: round;
     filter: blur(0.6px);
     opacity: 0;
@@ -721,16 +721,16 @@ function setupTagStroke() {
     //  6 %  – 72 %  travel    (0.54 – 6.5 s)
     // 72 %  – 85 %  fade out  (6.5 – 7.65 s)
     // 85 % – 100 %  invisible, arc resets to start
-    // 9 s cycle — sweep is quick (~3 s), rest is a clean pause
-    // 0 %–  4 %  fade in   (0 – 0.36 s)
-    // 4 %– 30 %  travel    (0.36 – 2.7 s)
-    // 30 %– 40 %  fade out  (2.7 – 3.6 s)
-    // 40 %–100 %  invisible pause
+    // 9 s cycle — 1 s active sweep, 8 s invisible pause
+    // 0 %–  3 %  fade in   (0 – 0.27 s)
+    // 3 %–  8 %  travel    (0.27 – 0.72 s)
+    // 8 %– 11 %  fade out  (0.72 – 0.99 s)
+    // 11 %–100 %  invisible pause
     arc.animate([
       { opacity: 0, strokeDashoffset: 0,                  easing: 'ease-out' },
-      { opacity: 1, strokeDashoffset: -perimeter * 0.04,  easing: 'linear',  offset: 0.04 },
-      { opacity: 1, strokeDashoffset: -perimeter * 0.30,  easing: 'ease-in', offset: 0.30 },
-      { opacity: 0, strokeDashoffset: -perimeter * 0.40,                     offset: 0.40 },
+      { opacity: 1, strokeDashoffset: -perimeter * 0.03,  easing: 'linear',  offset: 0.03 },
+      { opacity: 1, strokeDashoffset: -perimeter * 0.08,  easing: 'ease-in', offset: 0.08 },
+      { opacity: 0, strokeDashoffset: -perimeter * 0.11,                     offset: 0.11 },
       { opacity: 0, strokeDashoffset: 0 }
     ], {
       duration: 9000,
