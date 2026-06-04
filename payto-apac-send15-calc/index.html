@@ -191,7 +191,7 @@
 
   /* ── Secondary: shimmer over the VND value every ~9s ── */
   .exchange-rate-link {
-    font-size: 14px; font-weight: 590; color: var(--color-primary);
+    font-size: 14px; font-weight: 590; color: var(--text-benefit);
     text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
     position: relative; display: inline-block; overflow: hidden;
   }
@@ -218,7 +218,7 @@
     line-height: 1; white-space: nowrap; flex-shrink: 0;
   }
 
-  /* ── Primary: rotating conic-gradient glow sweeping around the tag ── */
+  /* ── Primary: traveling gradient stroke around the tag ── */
   .tag-sweep-wrap {
     position: relative;
     display: inline-flex;
@@ -229,32 +229,34 @@
   .tag-sweep-wrap::before {
     content: '';
     position: absolute;
-    inset: -6px;
+    inset: -1px;
     border-radius: var(--radius-pill);
+    padding: 1.5px; /* stroke thickness */
     background: conic-gradient(
       from 0deg,
       #2DD4BF   0%,
-      #60A5FA  30%,
-      #3B82F6  52%,
-      transparent 65%,
-      transparent 90%,
+      #60A5FA  28%,
+      #3B82F6  50%,
+      rgba(45,212,191,0.08) 62%,
+      rgba(45,212,191,0.08) 88%,
       #2DD4BF 100%
     );
-    opacity: 0.38;
-    filter: blur(18px);
+    /* mask-composite trick: show only the border ring, not the fill */
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
     animation: tagSweep 5s linear infinite;
-    z-index: -1;
   }
   @keyframes tagSweep {
     to { transform: rotate(360deg); }
   }
-  /* Reduced-motion: static glow instead of sweep */
+  /* Reduced-motion: static gradient stroke, no animation */
   @media (prefers-reduced-motion: reduce) {
     .tag-sweep-wrap::before {
       animation: none;
-      background: radial-gradient(ellipse at 50% 50%, rgba(96,165,250,0.35) 0%, transparent 70%);
-      filter: blur(22px);
-      inset: -8px;
+      background: conic-gradient(#2DD4BF 0%, #60A5FA 50%, #3B82F6 100%);
     }
     .exchange-rate-link::after { display: none; }
   }
