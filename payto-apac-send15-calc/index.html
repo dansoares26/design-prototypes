@@ -239,7 +239,7 @@
 
   .tag-benefit {
     display: inline-flex; flex-direction: row; align-items: center;
-    gap: var(--space-xs); padding: 5px 10px;
+    gap: 0; padding: 5px 10px;
     background: #d3eeee; border-radius: var(--radius-pill);
     font-size: 13px; font-weight: 590; color: var(--text-default);
     line-height: 1; white-space: nowrap; flex-shrink: 0;
@@ -255,16 +255,16 @@
     opacity: 0;
     overflow: hidden;
     transform-origin: left center;
-    transition: max-width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.5s ease,
-                margin-left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-left: 0;
+    padding-left: 0;
+    transition: max-width 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.7s ease 0.3s,
+                padding-left 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
   .tag-text.revealed {
     max-width: 80px;
     opacity: 1;
-    margin-left: 2px;
-    animation: tagTextPulse 4s ease-in-out infinite 0.8s;
+    padding-left: 5px;
+    animation: tagTextPulse 4s ease-in-out infinite 1.2s;
   }
   @keyframes tagTextPulse {
     0%,  60%, 100% { transform: scale(1); }
