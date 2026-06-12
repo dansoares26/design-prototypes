@@ -251,16 +251,15 @@
   }
   .tag-text {
     display: inline-block;
-    animation: tagTextWiggle 5s ease-in-out infinite;
+    animation: tagTextWiggle 4s ease-in-out infinite;
     transform-origin: center;
   }
   @keyframes tagTextWiggle {
-    0%,  50%, 100% { transform: translateX(0); }
-    52%            { transform: translateX(-1.5px); }
-    55%            { transform: translateX(1.5px); }
-    58%            { transform: translateX(-1px); }
-    61%            { transform: translateX(1px); }
-    64%            { transform: translateX(0); }
+    0%,  60%, 100% { transform: rotate(0deg); }
+    63%            { transform: rotate(-1.2deg); }
+    67%            { transform: rotate(1.2deg); }
+    71%            { transform: rotate(-0.7deg); }
+    75%            { transform: rotate(0deg); }
   }
   @media (prefers-reduced-motion: reduce) {
     .exchange-rate-link::after { display: none; }
