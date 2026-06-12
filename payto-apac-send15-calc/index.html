@@ -255,11 +255,9 @@
     transform-origin: center;
   }
   @keyframes tagTextWiggle {
-    0%,  60%, 100% { transform: rotate(0deg); }
-    63%            { transform: rotate(-1.2deg); }
-    67%            { transform: rotate(1.2deg); }
-    71%            { transform: rotate(-0.7deg); }
-    75%            { transform: rotate(0deg); }
+    0%,  60%, 100% { transform: scale(1); }
+    70%            { transform: scale(1.08); }
+    80%            { transform: scale(1); }
   }
   @media (prefers-reduced-motion: reduce) {
     .exchange-rate-link::after { display: none; }
