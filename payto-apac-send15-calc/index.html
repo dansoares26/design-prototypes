@@ -264,12 +264,12 @@
     max-width: 80px;
     opacity: 1;
     padding-left: 5px;
-    animation: tagTextPulse 4s ease-in-out infinite 1.2s;
+    animation: tagTextPulse 0.5s ease-in-out 1.4s 1 forwards;
   }
   @keyframes tagTextPulse {
-    0%,  60%, 100% { transform: scale(1); }
-    70%            { transform: scale(1.08); }
-    80%            { transform: scale(1); }
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
   }
   @media (prefers-reduced-motion: reduce) {
     .exchange-rate-link::after { display: none; }
