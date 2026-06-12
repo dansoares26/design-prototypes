@@ -669,20 +669,11 @@
 
 <script>
 
-(function() {
-  var revealed = false;
-  function revealTag() {
-    if (revealed) return;
-    revealed = true;
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
     document.querySelector('.tag-text').classList.add('revealed');
-  }
-  document.addEventListener('DOMContentLoaded', function() {
-    var card = document.querySelector('.screen');
-    ['pointerdown', 'focusin'].forEach(function(evt) {
-      card.addEventListener(evt, revealTag, { once: false });
-    });
-  });
-})();
+  }, 1000);
+});
 
 function openRateSheet() {
   var backdrop = document.getElementById('rateBackdrop');
