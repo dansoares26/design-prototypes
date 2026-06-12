@@ -243,6 +243,16 @@
     background: #d3eeee; border-radius: var(--radius-pill);
     font-size: 13px; font-weight: 590; color: var(--text-default);
     line-height: 1; white-space: nowrap; flex-shrink: 0;
+    animation: tagShake 4s ease-in-out infinite;
+    transform-origin: center;
+  }
+  @keyframes tagShake {
+    0%,  60%, 100% { transform: rotate(0deg); }
+    63%            { transform: rotate(-1.5deg); }
+    66%            { transform: rotate(1.5deg); }
+    69%            { transform: rotate(-1deg); }
+    72%            { transform: rotate(1deg); }
+    75%            { transform: rotate(0deg); }
   }
 
   .tag-sweep-wrap {
